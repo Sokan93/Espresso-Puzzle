@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jigsaw Puzzle Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6F4E37 0%, #A0522D 25%, #D2691E 50%, #CD853F 75%, #DEB887 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .screen {
+            display: none;
+            background: rgba(139, 69, 19, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(101, 67, 33, 0.4);
+            border: 1px solid rgba(210, 180, 140, 0.3);
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #D2691E, #F4A460, #DEB887);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 4px rgba(101, 67, 33, 0.3);
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        .input-group {
+            margin: 2rem 0;
+        }
+
+        input[type="text"] {
+            padding: 1rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            width: 300px;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #8B4513, #A0522D, #D2691E);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0.5rem;
+            box-shadow: 0 4px 15px rgba(101, 67, 33, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(101, 67, 33, 0.4);
+        }
+
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .puzzle-option {
+            background: rgba(139, 69, 19, 0.15);
+            border-radius: 15px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid rgba(210, 180, 140, 0.3);
+        }
+
+        .puzzle-option:hover {
+            transform: scale(1.05);
+            border-color: #D2691E;
+            box-shadow: 0 8px 25px rgba(101, 67, 33, 0.3);
+        }
+
+        .puzzle-option img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 5px;
+            margin: 0 auto;
+        }
+
+        .puzzle-piece {
+            background-size: 300px 300px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(1.05);
+            border-color: #4ecdc4;
+        }
+
+        .pieces-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+
+        .draggable-piece {
+            background-size: 300px 300px;
+            border-radius: 5px;
+            cursor: move;
+            transition: all 0.3s;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            opacity: 0.9;
+        }
+
+        .draggable-piece:hover {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .game-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .success-screen {
+            text-align: center;
+        }
+
+        .game-over {
+            font-size: 3rem;
+            animation: shake 0.5s infinite;
+            color: #FF6B6B;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .celebration {
+            font-size: 3rem;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .twitter-btn {
+            background: #1da1f2;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            margin: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .puzzle-board, .pieces-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .puzzle-piece, .draggable-piece {
+                background-size: 250px 250px;
+            }
+            
+            .puzzle-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Welcome Screen -->
+        <div class="screen active" id="welcomeScreen">
+            <h1>☕ Espresso Sys Puzzle Challenge</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 2rem;">
+                Welcome to the ultimate coffee-powered puzzle experience!<br>
+                <small style="opacity: 0.8;">Powered for Espresso</small>
+            </p>
+            <div class="input-group">
+                <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20">
+            </div>
+            <button class="btn" onclick="gameController.startGame()">Brew Some Puzzles! ☕</button>
+        </div>
+
+        <!-- Puzzle Selection Screen -->
+        <div class="screen" id="selectionScreen">
+            <h2>Choose Your Puzzle</h2>
+            <p>Select a puzzle to solve, <span id="playerName"></span>!</p>
+            <div class="puzzle-grid">
+                <div class="puzzle-option" onclick="gameController.selectPuzzle(0)">
+                    <img src="https://i.imgur.com/GUATLYz.jpeg" alt="Happy Coffee Cup">
+                    <p>Happy Coffee</p>
+                </div>
+                <div class="puzzle-option" onclick="gameController.selectPuzzle(1)">
+                    <img src="https://i.imgur.com/3oGAS1Z.jpeg" alt="Sleepy Sloth">
+                    <p>Sleepy Sloth</p>
+                </div>
+                <div class="puzzle-option" onclick="gameController.selectPuzzle(2)">
+                    <img src="https://i.imgur.com/GCZFvfE.jpeg" alt="Modern Woman">
+                    <p>Modern Woman</p>
+                </div>
+                <div class="puzzle-option" onclick="gameController.selectPuzzle(3)">
+                    <img src="https://i.imgur.com/2B0uXPS.jpeg" alt="Espresso Sys Logo">
+                    <p>Espresso Sys</p>
+                </div>
+                <div class="puzzle-option" onclick="gameController.selectPuzzle(4)">
+                    <img src="https://i.imgur.com/Qxd86JY.jpeg" alt="Bearded Man">
+                    <p>Ben Fisch</p>
+                </div>
+                <div class="puzzle-option" onclick="gameController.selectPuzzle(5)">
+                    <img src="https://i.imgur.com/7joUCr3.jpeg" alt="ApeChain Logo">
+                    <p>ApeChain</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="screen" id="gameScreen">
+            <div class="game-info">
+                <h2 id="puzzleTitle">Solving Puzzle</h2>
+                <div class="timer">Time: <span id="timer">00:00</span></div>
+                <div>Moves: <span id="moves">0</span> / <span id="maxMoves">15</span></div>
+                <button class="btn" onclick="gameController.showSelection()">Choose Different Puzzle</button>
+            </div>
+            <div class="game-area">
+                <div>
+                    <h3>Puzzle Board</h3>
+                    <div class="puzzle-board" id="puzzleBoard"></div>
+                </div>
+                <div>
+                    <h3>Pieces</h3>
+                    <div class="pieces-container" id="piecesContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div class="screen" id="gameOverScreen">
+            <div class="game-over">☠️</div>
+            <h2>Game Over!</h2>
+            <p style="font-size: 1.2rem; margin: 1rem 0;">
+                <span id="gameOverPlayerName"></span>, you've exceeded the maximum moves limit!
+            </p>
+            <div style="font-size: 1.1rem; margin: 1rem 0;">
+                <div>Time: <span id="gameOverTime"></span></div>
+                <div>Moves Used: <span id="gameOverMoves"></span> / <span id="gameOverMaxMoves"></span></div>
+            </div>
+            <button class="btn" onclick="gameController.retryPuzzle()">Try Again</button>
+            <button class="btn" onclick="gameController.showSelection()">Choose Different Puzzle</button>
+            <button class="btn" onclick="gameController.resetGame()">New Player</button>
+        </div>
+
+        <!-- Success Screen -->
+        <div class="screen" id="successScreen">
+            <div class="celebration">🎉</div>
+            <h2>Congratulations!</h2>
+            <p style="font-size: 1.2rem; margin: 1rem 0;">
+                <span id="successPlayerName"></span>, you solved the puzzle!
+            </p>
+            <div style="font-size: 1.1rem; margin: 1rem 0;">
+                <div>Time: <span id="finalTime"></span></div>
+                <div>Moves: <span id="finalMoves"></span></div>
+            </div>
+            
+            <a href="#" id="twitterShare" class="btn twitter-btn" target="_blank">
+                🐦 Share on Twitter
+            </a>
+            <br>
+            <button class="btn" onclick="gameController.showSelection()">Play Again</button>
+            <button class="btn" onclick="gameController.resetGame()">New Player</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Controller - encapsulated to avoid global scope issues
+        const gameController = {
+            currentPlayer: '',
+            currentPuzzle: null,
+            startTime: null,
+            timerInterval: null,
+            moves: 0,
+            maxMoves: 15,
+            correctPositions: {},
+            puzzlePieces: [],
+
+            puzzles: [
+                { 
+                    name: 'Happy Coffee', 
+                    imageUrl: 'https://i.imgur.com/GUATLYz.jpeg'
+                },
+                { 
+                    name: 'Sleepy Sloth', 
+                    imageUrl: 'https://i.imgur.com/3oGAS1Z.jpeg'
+                },
+                { 
+                    name: 'Modern Woman', 
+                    imageUrl: 'https://i.imgur.com/GCZFvfE.jpeg'
+                },
+                { 
+                    name: 'Espresso Sys', 
+                    imageUrl: 'https://i.imgur.com/2B0uXPS.jpeg'
+                },
+                { 
+                    name: 'Ben Fisch', 
+                    imageUrl: 'https://i.imgur.com/Qxd86JY.jpeg'
+                },
+                { 
+                    name: 'ApeChain', 
+                    imageUrl: 'https://i.imgur.com/7joUCr3.jpeg'
+                }
+            ],
+
+            startGame() {
+                const username = document.getElementById('usernameInput').value.trim();
+                if (!username) {
+                    alert('Please enter your username!');
+                    return;
+                }
+                this.currentPlayer = username;
+                document.getElementById('playerName').textContent = this.currentPlayer;
+                this.showScreen('selectionScreen');
+            },
+
+            selectPuzzle(index) {
+                this.currentPuzzle = index;
+                document.getElementById('puzzleTitle').textContent = `Solving ${this.puzzles[index].name}`;
+                this.initializePuzzle(index);
+                this.showScreen('gameScreen');
+                this.startTimer();
+            },
+
+            initializePuzzle(puzzleIndex) {
+                const puzzleBoard = document.getElementById('puzzleBoard');
+                const piecesContainer = document.getElementById('piecesContainer');
+                
+                puzzleBoard.innerHTML = '';
+                piecesContainer.innerHTML = '';
+                
+                this.moves = 0;
+                document.getElementById('moves').textContent = this.moves;
+                document.getElementById('maxMoves').textContent = this.maxMoves;
+                this.correctPositions = {};
+                this.puzzlePieces = [];
+
+                const imageUrl = this.puzzles[puzzleIndex].imageUrl;
+
+                // Create 9 puzzle pieces
+                for (let i = 0; i < 9; i++) {
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    
+                    // Create drop zone in puzzle board
+                    const dropZone = document.createElement('div');
+                    dropZone.className = 'puzzle-piece';
+                    dropZone.dataset.position = i;
+                    dropZone.style.backgroundColor = 'rgba(139, 69, 19, 0.2)';
+                    dropZone.addEventListener('dragover', (e) => this.allowDrop(e));
+                    dropZone.addEventListener('drop', (e) => this.dropPiece(e));
+                    puzzleBoard.appendChild(dropZone);
+                    
+                    // Create draggable piece
+                    const piece = document.createElement('div');
+                    piece.className = 'draggable-piece';
+                    piece.dataset.correctPosition = i;
+                    piece.dataset.currentPosition = i;
+                    piece.draggable = true;
+                    piece.id = `piece-${i}`;
+                    
+                    // Set background to use the actual image
+                    piece.style.backgroundImage = `url(${imageUrl})`;
+                    piece.style.backgroundSize = '300px 300px';
+                    piece.style.backgroundPosition = `${-col * 100}px ${-row * 100}px`;
+                    piece.style.backgroundRepeat = 'no-repeat';
+                    
+                    piece.addEventListener('dragstart', (e) => this.dragStart(e));
+                    piecesContainer.appendChild(piece);
+                    
+                    this.puzzlePieces.push(piece);
+                }
+                
+                // Shuffle pieces
+                this.shufflePieces();
+                
+                // Make pieces container a drop zone
+                piecesContainer.addEventListener('dragover', (e) => this.allowDrop(e));
+                piecesContainer.addEventListener('drop', (e) => this.dropToContainer(e));
+            },
+
+            dropToContainer(e) {
+                e.preventDefault();
+                const pieceId = e.dataTransfer.getData('text/plain');
+                const piece = document.getElementById(pieceId);
+                const piecesContainer = document.getElementById('piecesContainer');
+                
+                if (piece && piece.parentElement.classList.contains('puzzle-piece')) {
+                    // Remove from correct positions if it was correct
+                    const parentPosition = parseInt(piece.parentElement.dataset.position);
+                    if (this.correctPositions[parentPosition]) {
+                        delete this.correctPositions[parentPosition];
+                    }
+                    
+                    // Reset piece styling
+                    piece.style.width = '';
+                    piece.style.height = '';
+                    piece.style.border = '2px solid rgba(255, 255, 255, 0.5)';
+                    piece.style.boxShadow = '';
+                    piece.draggable = true;
+                    
+                    piecesContainer.appendChild(piece);
+                    
+                    this.moves++;
+                    document.getElementById('moves').textContent = this.moves;
+                    
+                    // Check if max moves exceeded
+                    if (this.moves >= this.maxMoves && Object.keys(this.correctPositions).length < 9) {
+                        setTimeout(() => this.gameOver(), 500);
+                    }
+                }
+            },
+
+            shufflePieces() {
+                const container = document.getElementById('piecesContainer');
+                const pieces = Array.from(container.children);
+                
+                // Fisher-Yates shuffle
+                for (let i = pieces.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    container.appendChild(pieces[j]);
+                }
+            },
+
+            dragStart(e) {
+                e.dataTransfer.setData('text/plain', e.target.id);
+            },
+
+            allowDrop(e) {
+                e.preventDefault();
+            },
+
+            dropPiece(e) {
+                e.preventDefault();
+                const pieceId = e.dataTransfer.getData('text/plain');
+                const piece = document.getElementById(pieceId);
+                const dropZone = e.target.closest('.puzzle-piece') || e.target;
+                
+                if (dropZone.classList.contains('puzzle-piece')) {
+                    const position = parseInt(dropZone.dataset.position);
+                    const correctPosition = parseInt(piece.dataset.correctPosition);
+                    
+                    // If there's already a piece in this slot, swap them
+                    if (dropZone.children.length > 0) {
+                        const existingPiece = dropZone.children[0];
+                        const piecesContainer = document.getElementById('piecesContainer');
+                        
+                        // Move existing piece back to pieces container
+                        existingPiece.style.width = '';
+                        existingPiece.style.height = '';
+                        existingPiece.style.border = '2px solid rgba(255, 255, 255, 0.5)';
+                        existingPiece.style.boxShadow = '';
+                        existingPiece.draggable = true;
+                        
+                        // Remove from correct positions if it was correct
+                        const existingCorrectPos = parseInt(existingPiece.dataset.correctPosition);
+                        if (this.correctPositions[position] && existingCorrectPos === position) {
+                            delete this.correctPositions[position];
+                        }
+                        
+                        piecesContainer.appendChild(existingPiece);
+                    }
+                    
+                    // Place the new piece
+                    dropZone.appendChild(piece);
+                    piece.style.width = '100%';
+                    piece.style.height = '100%';
+                    piece.draggable = false;
+                    
+                    this.moves++;
+                    document.getElementById('moves').textContent = this.moves;
+                    
+                    // Check if max moves exceeded
+                    if (this.moves >= this.maxMoves && Object.keys(this.correctPositions).length < 9) {
+                        setTimeout(() => this.gameOver(), 500);
+                        return;
+                    }
+                    
+                    if (position === correctPosition) {
+                        this.correctPositions[position] = true;
+                        piece.style.border = '2px solid #D2691E';
+                        piece.style.boxShadow = '0 0 10px rgba(210, 105, 30, 0.6)';
+                        
+                        // Check if puzzle is complete
+                        if (Object.keys(this.correctPositions).length === 9) {
+                            setTimeout(() => this.completePuzzle(), 500);
+                        }
+                    } else {
+                        piece.style.border = '2px solid #CD5C5C';
+                        piece.style.boxShadow = '0 0 10px rgba(205, 92, 92, 0.6)';
+                        
+                        // Remove from correct positions if it was there
+                        if (this.correctPositions[position]) {
+                            delete this.correctPositions[position];
+                        }
+                    }
+                }
+            },
+
+            startTimer() {
+                this.startTime = Date.now();
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+            },
+
+            updateTimer() {
+                const elapsed = Date.now() - this.startTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            },
+
+            gameOver() {
+                clearInterval(this.timerInterval);
+                const finalTime = document.getElementById('timer').textContent;
+                
+                document.getElementById('gameOverPlayerName').textContent = this.currentPlayer;
+                document.getElementById('gameOverTime').textContent = finalTime;
+                document.getElementById('gameOverMoves').textContent = this.moves;
+                document.getElementById('gameOverMaxMoves').textContent = this.maxMoves;
+                
+                this.showScreen('gameOverScreen');
+            },
+
+            retryPuzzle() {
+                if (this.currentPuzzle !== null) {
+                    this.initializePuzzle(this.currentPuzzle);
+                    this.showScreen('gameScreen');
+                    this.startTimer();
+                }
+            },
+
+            completePuzzle() {
+                clearInterval(this.timerInterval);
+                const finalTime = document.getElementById('timer').textContent;
+                
+                document.getElementById('successPlayerName').textContent = this.currentPlayer;
+                document.getElementById('finalTime').textContent = finalTime;
+                document.getElementById('finalMoves').textContent = this.moves;
+                
+                // Generate Twitter share URL
+                const puzzleName = this.puzzles[this.currentPuzzle].name;
+                const text = `I just solved the ${puzzleName} jigsaw puzzle in ${finalTime} with ${this.moves} moves! 🧩✨`;
+                const shareURL = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+                document.getElementById('twitterShare').href = shareURL;
+                
+                this.showScreen('successScreen');
+            },
+
+            showScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+                document.getElementById(screenId).classList.add('active');
+            },
+
+            showSelection() {
+                clearInterval(this.timerInterval);
+                this.showScreen('selectionScreen');
+            },
+
+            resetGame() {
+                this.currentPlayer = '';
+                this.currentPuzzle = null;
+                clearInterval(this.timerInterval);
+                document.getElementById('usernameInput').value = '';
+                this.showScreen('welcomeScreen');
+            }
+        };
+
+        // Make functions available globally for onclick handlers (alternative approach)
+        window.startGame = () => gameController.startGame();
+        window.selectPuzzle = (index) => gameController.selectPuzzle(index);
+        window.showSelection = () => gameController.showSelection();
+        window.retryPuzzle = () => gameController.retryPuzzle();
+        window.resetGame = () => gameController.resetGame();
+    </script>
+</body>
+</html>
